@@ -1,6 +1,6 @@
 import { pgTable, uuid, varchar } from "drizzle-orm/pg-core";
 import { timestamps } from "./colums.helpers";
-import { createSelectSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 export const usersTable = pgTable("users", {
   id: uuid().primaryKey().defaultRandom(),
@@ -10,17 +10,28 @@ export const usersTable = pgTable("users", {
   ...timestamps,
 });
 
-const userInsertSchema = createSelectSchema(usersTable);
+const userInsertSchema = createInsertSchema(usersTable);
+const userSelectSchema = createSelectSchema(usersTable);
+const userLoginSchema = userInsertSchema.pick({
+  email: true,
+  password: true,
+});
 
 export const postsTable = pgTable("posts", {
   id: uuid().primaryKey().defaultRandom(),
-  authorId: uuid().references(() => usersTable.id),
+  author_id: uuid().references(() => usersTable.id),
   content: varchar({ length: 255 }).notNull(),
-  imageSrc: varchar({ length: 255 }),
+  image_src: varchar({ length: 255 }),
   ...timestamps,
 });
 
-const postInsertSchema = createSelectSchema(postsTable);
+const postInsertSchema = createInsertSchema(postsTable);
 const postSelectSchema = createSelectSchema(postsTable);
 
-export { userInsertSchema, postInsertSchema, postSelectSchema };
+export {
+  userInsertSchema,
+  userLoginSchema,
+  userSelectSchema,
+  postInsertSchema,
+  postSelectSchema,
+};
