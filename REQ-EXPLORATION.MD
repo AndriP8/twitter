@@ -20,7 +20,7 @@
 
 ## Architecture / high level design
 
-![Architecture diagram](../../../public/assets/news-feed/architecture-diagram.png)
+![Architecture diagram](public/architecture-diagram.png)
 
 ## Component responsibilities
 
