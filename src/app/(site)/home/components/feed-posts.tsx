@@ -3,19 +3,17 @@
 import { useInfiniteScroll } from "@/app/lib/use-infinite-scroll";
 import { getPosts, PostsData } from "../controller/get-posts";
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function FeedPosts({ posts }: { posts: PostsData[] }) {
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [data, setData] = useState<PostsData[]>(posts);
-  const size = 10;
 
   const getPostsData = useCallback(async () => {
     const res = await getPosts({ size: 10, cursor });
 
-    if (cursor && res.data.length === size) {
-      const nextCursor = res.data[res.data.length - 1].id;
-      setCursor(nextCursor);
+    if (res.pagination.has_more) {
+      setCursor(res.pagination.cursor);
       setData((prev) => [...prev, ...res.data]);
       return res.data;
     }

@@ -13,6 +13,11 @@ export type PostsData = z.infer<typeof postSelectSchema> & {
 
 type GetPostsResponse = {
   data: PostsData[];
+  pagination: {
+    cursor?: string;
+    size: number;
+    has_more: boolean;
+  };
 };
 
 export async function getPosts({ size, cursor }: GetPostsType) {

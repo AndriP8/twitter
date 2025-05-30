@@ -61,7 +61,19 @@ export async function GET(req: NextRequest) {
       .limit(size)
       .orderBy(asc(postsTable.id));
 
-    return Response.json({ data: posts }, { status: 200 });
+    const nextCursor = posts[posts.length - 1]?.id;
+
+    return Response.json(
+      {
+        data: posts,
+        pagination: {
+          cursor: nextCursor,
+          has_more: posts.length === size,
+          size: posts.length,
+        },
+      },
+      { status: 200 },
+    );
   } catch (error) {
     console.error("Error fetching posts:", error);
     return Response.json({ error: "Internal Server Error" }, { status: 500 });

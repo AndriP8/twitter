@@ -50,15 +50,9 @@
   ```
   Body / payload
   {
-    "author": {
-        "id": "456",
-        "name": "John Doe"
-    },
+    "autrhor_id": "123",
     "content": "Hello world",
-    "image": {
-        "src": "https://www.example.com/feed-images.jpg",
-        "alt": "An image alt" // Either user-provided, or generated on the server.
-      }
+    "image_src": "feed-images.jpg"
   }
   ```
 
@@ -71,15 +65,14 @@
         {
             "id": "123",
             "author": {
-            "id": "456",
-            "name": "John Doe"
+              "id": "456",
+              "name": "John Doe"
             },
             "content": "Hello world",
-            "image": "https://www.example.com/feed-images.jpg",
+            "image_src": "feed-images.jpg",
             "reactions": {
                 "likes": 20,
             },
-            "created_time": 1620639583
         }
         // ... More posts.
     ]
@@ -105,7 +98,8 @@ Using cursor based pagination to consider large dataset and avoid inacurrate pag
  {
    "pagination": {
         "size": 10,
-        "next_cursor": "=dXNlcjpVMEc5V0ZYTlo"
+        "next_cursor": "=dXNlcjpVMEc5V0ZYTlo",
+        "has_more": true,
    }
    "results": [ // data  ]
    }
