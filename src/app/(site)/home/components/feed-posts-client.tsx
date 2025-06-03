@@ -5,6 +5,6 @@ import { PostsData } from "../controller/get-posts";
 
 const FeedPosts = dynamic(() => import("./feed-posts"), { ssr: false });
 
-export default function FeedPostsClient({ posts }: { posts: PostsData[] }) {
-  return <FeedPosts posts={posts} />;
+export default function FeedPostsClient({ userId }: { userId: string }) {
+  return <FeedPosts userId={userId} />;
 }

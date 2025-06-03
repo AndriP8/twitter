@@ -25,7 +25,6 @@ export default function LoginForm() {
     }
   }, [state]);
 
-  console.log(state.token);
   return (
     <form className="max-w-sm mt-32 mx-auto" action={formAction}>
       <div className="mb-5">

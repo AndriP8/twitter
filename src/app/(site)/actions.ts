@@ -1,8 +1,10 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { userLoginSchema } from "../database/schema";
 
 export async function loginUser(prevState: unknown, formData: FormData) {
+  const cookieStore = await cookies();
   const body = userLoginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -24,5 +26,6 @@ export async function loginUser(prevState: unknown, formData: FormData) {
   });
 
   const data = await response.json();
+  cookieStore.set("token", data.token);
   return data;
 }
