@@ -1,10 +1,11 @@
 import { db } from "@/app/database/client";
 import {
+  likesTable,
   postInsertSchema,
   postsTable,
   usersTable,
 } from "@/app/database/schema";
-import { asc, eq, gt } from "drizzle-orm";
+import { asc, eq, gt, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -43,6 +44,8 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const cursor = searchParams.get("cursor");
     const size = Number(searchParams.get("size")) || 10;
+    const requestedUserId = searchParams.get("user_id") || undefined;
+
     const posts = await db
       .select({
         id: postsTable.id,
@@ -53,6 +56,23 @@ export async function GET(req: NextRequest) {
         author: {
           id: postsTable.author_id,
           name: usersTable.name,
+        },
+        stats: {
+          like_count:
+            sql<number>`CAST((SELECT count(*) FROM ${likesTable} WHERE ${likesTable.post_id} = ${postsTable.id}) AS INTEGER)`.as(
+              "like_count",
+            ),
+        },
+        user_interaction: {
+          liked: sql<boolean>`EXISTS (
+            SELECT 1 FROM ${likesTable}
+            WHERE ${likesTable.post_id} = ${postsTable.id}
+            ${
+              requestedUserId
+                ? sql`AND ${likesTable.user_id} = ${requestedUserId}`
+                : sql``
+            }
+          )`.as("liked"),
         },
       })
       .from(postsTable)
@@ -66,6 +86,9 @@ export async function GET(req: NextRequest) {
     return Response.json(
       {
         data: posts,
+        meta: {
+          requested_user_id: requestedUserId,
+        },
         pagination: {
           cursor: nextCursor,
           has_more: posts.length === size,
