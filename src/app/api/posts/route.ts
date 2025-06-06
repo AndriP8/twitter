@@ -86,9 +86,6 @@ export async function GET(req: NextRequest) {
     return Response.json(
       {
         data: posts,
-        meta: {
-          requested_user_id: requestedUserId,
-        },
         pagination: {
           cursor: nextCursor,
           has_more: posts.length === size,

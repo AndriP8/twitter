@@ -39,9 +39,8 @@
 ## Data model
 
 - **Feed:** List of post and pagination data
-- **Post:** `id`, `created_time`, `content`, `author`, `reactions`, `image_url?`
-- **User:** `id`, `name`, `profile_photo_url`
-- **New Post:** `message`, `image` from user input
+- **Post:** `id`, `content`, `author_id`, `image_src?`
+- **User:** `id`, `name`, `email`
 
 ## API definition
 
@@ -56,12 +55,12 @@
   }
   ```
 
-- **GET /feed:** Get list feed
+- **GET /posts:** Get list feed
 
   ```
   {
     "pagination": {}
-    "results": [
+    "data": [
         {
             "id": "123",
             "author": {
@@ -73,6 +72,9 @@
             "reactions": {
                 "likes": 20,
             },
+            "user_interactions":{
+                "liked":true
+            }
         }
         // ... More posts.
     ]
@@ -81,7 +83,7 @@
 
   TODO: Design response for like interaction
 
-- **PUT /feed/like:** like interaction
+- **PUT /posts/likes:** like interaction
 
   ```
   {
@@ -101,7 +103,7 @@ Using cursor based pagination to consider large dataset and avoid inacurrate pag
         "next_cursor": "=dXNlcjpVMEc5V0ZYTlo",
         "has_more": true,
    }
-   "results": [ // data  ]
+   "data": [ // data  ]
    }
 ```
 
@@ -128,7 +130,6 @@ Using cursor based pagination to consider large dataset and avoid inacurrate pag
 - **Infinite Scrolling**
 - **Virtualized list**
 - **Loading indicators**
-- **Infinite Scrolling**
 - **Stale Feeds**
   - Prompt the user to refresh or refetch feed if last fetched timestamp is more than spesific time
 
