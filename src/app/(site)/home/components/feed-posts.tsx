@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Fragment, useState } from "react";
+import { Fragment, useCallback } from "react";
 import { likePost } from "../controller/like-post";
 import { clsx } from "clsx";
 import { unLikePost } from "../controller/unlike-posts";
@@ -9,56 +9,99 @@ import {
   keepPreviousData,
   useInfiniteQuery,
   useMutation,
-  useQuery,
+  type InfiniteData,
 } from "@tanstack/react-query";
-import { getPosts } from "../controller/get-posts";
+import { GetPostsResponse, postsOptions } from "../controller/get-posts";
 import { useInfiniteScroll } from "@/app/lib/use-infinite-scroll";
 import { getQueryClient } from "../../get-query-client";
 
 export default function FeedPosts({ userId }: { userId: string }) {
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
-  const [increment, setIncrement] = useState(0);
   const queryClient = getQueryClient();
+  const prevData = queryClient.getQueryData<{ pages: GetPostsResponse[] }>([
+    "posts",
+  ]);
 
   const { data, fetchNextPage } = useInfiniteQuery({
-    queryKey: ["posts", increment],
-    queryFn: async () => {
-      const response = await getPosts({
-        size: 10,
-        cursor,
-        userId,
-      });
-      setCursor(response.pagination.cursor);
-      return response;
-    },
-    getNextPageParam: (lastPage) => lastPage.pagination.cursor,
+    ...postsOptions({ userId, size: 10 }),
     placeholderData: keepPreviousData,
-    initialPageParam: undefined,
+    initialPageParam: prevData?.pages[0].pagination.cursor,
   });
 
-  const { isFetching, targetRef } = useInfiniteScroll(fetchNextPage);
+  const lastData = data?.pages[data.pages.length - 1];
+
+  const { isFetching, targetRef } = useInfiniteScroll(
+    lastData?.pagination.has_more ? fetchNextPage : () => null,
+  );
+
   const likeMutation = useMutation({
-    mutationFn: (postId: string) =>
-      likePost({ post_id: postId, user_id: userId }),
-    onSettled: () => {
-      setIncrement(increment + 1);
-      queryClient.invalidateQueries({ queryKey: ["posts", increment] });
+    mutationFn: ({ postId, liked }: { postId: string; liked: boolean }) =>
+      liked
+        ? unLikePost({ post_id: postId, user_id: userId })
+        : likePost({ post_id: postId, user_id: userId }),
+    onMutate: async ({ postId, liked }: { postId: string; liked: boolean }) => {
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+
+      const previousData = queryClient.getQueryData<{
+        pages: GetPostsResponse[];
+      }>(["posts"]);
+
+      queryClient.setQueryData<InfiniteData<GetPostsResponse>>(
+        ["posts"],
+        (oldData) => {
+          if (!oldData) return oldData;
+
+          let found = false;
+          const updatedPages = oldData.pages.map((page: GetPostsResponse) => {
+            if (found) return page;
+
+            const feedIndex = page.data.findIndex(
+              (posts) => posts.id === postId,
+            );
+            if (feedIndex === -1) return page;
+            found = true;
+            const updatedFeeds = [...page.data];
+            const targetFeed = updatedFeeds[feedIndex];
+
+            updatedFeeds[feedIndex] = {
+              ...targetFeed,
+              stats: {
+                like_count: liked
+                  ? targetFeed.stats.like_count - 1
+                  : targetFeed.stats.like_count + 1,
+              },
+              user_interaction: {
+                liked: !liked,
+              },
+            };
+
+            return {
+              ...page,
+              data: updatedFeeds,
+            };
+          });
+
+          return {
+            pages: updatedPages,
+            pageParams: oldData.pageParams,
+          };
+        },
+      );
+
+      return { previousData };
+    },
+    onError: (_err, _post, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(["posts"], context.previousData);
+      }
     },
   });
-  const handleLike = async (postId: string) => {
-    likeMutation.mutate(postId);
-  };
-  const unLikeMutation = useMutation({
-    mutationFn: (postId: string) =>
-      unLikePost({ post_id: postId, user_id: userId }),
-    onSettled: () => {
-      setIncrement(increment + 1);
-      queryClient.invalidateQueries({ queryKey: ["posts", increment] });
+
+  const handleLike = useCallback(
+    (feedId: string, liked: boolean) => {
+      likeMutation.mutate({ postId: feedId, liked });
     },
-  });
-  const handleUnLike = async (postId: string) => {
-    unLikeMutation.mutate(postId);
-  };
+    [likeMutation],
+  );
 
   return (
     <div className="space-y-4">
@@ -109,17 +152,16 @@ export default function FeedPosts({ userId }: { userId: string }) {
                     tweet.user_interaction.liked ? "text-red-500" : null,
                   )}
                   onClick={() => {
-                    if (tweet.user_interaction.liked) {
-                      handleUnLike(tweet.id);
-                    } else {
-                      handleLike(tweet.id);
-                    }
+                    handleLike(tweet.id, tweet.user_interaction.liked);
                   }}
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
+                    className={clsx(
+                      "h-5 w-5",
+                      tweet.user_interaction.liked ? "text-red-500" : null,
+                    )}
+                    fill={tweet.user_interaction.liked ? "#fb2c36" : "none"}
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
