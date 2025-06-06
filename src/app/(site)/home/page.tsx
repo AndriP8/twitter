@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import FeedComposer from "./components/feed-composer";
 import FeedPostsClient from "./components/feed-posts-client";
-import { getPosts } from "./controller/get-posts";
+import { getPosts, postsOptions } from "./controller/get-posts";
 import jwt from "jsonwebtoken";
 import { getQueryClient } from "../get-query-client";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
@@ -15,19 +15,9 @@ export default async function Home() {
   };
 
   const queryClient = getQueryClient();
-  void queryClient.prefetchQuery({
-    queryKey: ["posts", 0],
-    queryFn: async () => {
-      const response = await getPosts({
-        size: 10,
-        userId: user.id,
-      });
-      return {
-        pages: [response],
-        pageParams: [null],
-      };
-    },
-  });
+  void queryClient.prefetchInfiniteQuery(
+    postsOptions({ userId: user.id, size: 10 }),
+  );
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">

@@ -1,11 +1,12 @@
 import { postSelectSchema, userSelectSchema } from "@/app/database/schema";
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions } from "@tanstack/react-query";
 import { z } from "zod";
 
 type GetPostsType = {
   size: number;
   cursor?: string;
   userId?: string;
+  initialPageParam?: string;
 };
 
 export type PostsData = Omit<z.infer<typeof postSelectSchema>, "like_count"> & {
@@ -48,19 +49,24 @@ export async function getPosts({ size, cursor, userId }: GetPostsType) {
   return posts;
 }
 
-export const postsOptions = ({ size, cursor, userId }: GetPostsType) =>
-  queryOptions({
-    queryKey: ["posts", 0],
-    queryFn: async () => {
+export const postsOptions = ({
+  size,
+  userId,
+  initialPageParam,
+}: GetPostsType) =>
+  infiniteQueryOptions({
+    queryKey: ["posts"],
+    queryFn: async ({ pageParam }) => {
       const response = await getPosts({
         size,
-        cursor,
+        cursor: pageParam,
         userId,
       });
-      return {
-        pageParams: undefined,
-        pages: [response],
-        // },
-      };
+      return response;
     },
+    initialPageParam,
+    getNextPageParam: (lastPage) => {
+      return lastPage.pagination.cursor;
+    },
+    refetchOnWindowFocus: false,
   });
